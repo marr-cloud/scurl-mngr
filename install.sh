@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPO="meitrix8208/scurl-mngr"
+REPO="marr-cloud/scurl-mngr"
 DEFAULT_PATH="$HOME/.local/bin"
 
 echo "scurl-mngr installer"

@@ -730,7 +730,7 @@ Expected: FAIL (install.sh does not exist)
 #!/bin/sh
 set -eu
 
-REPO="meitrix8208/scurl-mngr"
+REPO="marr-cloud/scurl-mngr"
 DEFAULT_PATH="$HOME/.local/bin"
 
 echo "scurl-mngr installer"
@@ -805,7 +805,7 @@ Manage [static-curl](https://github.com/stunnel/static-curl) installations.
 ## Quick Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/meitrix8208/scurl-mngr/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/marr-cloud/scurl-mngr/main/install.sh | sh
 ```
 
 ## Requirements
