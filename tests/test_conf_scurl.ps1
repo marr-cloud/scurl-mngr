@@ -60,4 +60,11 @@ Assert-Eq $script:INSTALL_PATH "C:\test" "read config INSTALL_PATH"
 
 Remove-Item -Recurse -Force $testDir
 
+# --- Test: platform detection ---
+. "$PSScriptRoot/../conf-scurl.ps1"
+
+$result = Get-ScurlPlatform
+Assert-Eq $result.OS "windows" "detect OS"
+Assert-True ($result.Arch -ne "") "detect arch non-empty"
+
 Show-Summary

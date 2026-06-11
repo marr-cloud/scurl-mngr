@@ -29,3 +29,14 @@ function Read-ScurlConfig {
 function Test-ScurlConfig {
     Test-Path $script:ConfigFile
 }
+
+function Get-ScurlPlatform {
+    $os = "windows"
+    $arch = switch ($env:PROCESSOR_ARCHITECTURE) {
+        "AMD64" { "x86_64" }
+        "ARM64" { "aarch64" }
+        "x86"   { "i686" }
+        default { throw "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE" }
+    }
+    return @{ OS = $os; Arch = $arch }
+}
