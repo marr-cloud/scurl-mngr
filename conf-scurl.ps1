@@ -104,3 +104,134 @@ function Remove-FromUserPath($Dir) {
     $envParts = $env:Path -split ';' | Where-Object { $_ -ne $Dir -and $_ -ne "" }
     $env:Path = $envParts -join ';'
 }
+
+function Show-Usage {
+    Write-Host @"
+Usage: conf-scurl <command> [args]
+
+Commands:
+  install [version]  Install scurl (latest or specific version)
+  update             Update to latest version
+  remove             Remove scurl and conf-scurl
+  status             Show installed version and update availability
+  config [key] [val] View or edit configuration
+
+"@
+}
+
+function Invoke-Install($TargetVersion) {
+    if (Test-ScurlConfig) {
+        Read-ScurlConfig
+    } else {
+        $platform = Get-ScurlPlatform
+        $script:OS = $platform.OS
+        $script:ARCH = $platform.Arch
+        $script:INSTALL_PATH = Join-Path $env:LOCALAPPDATA "scurl\bin"
+        $script:BINARY_NAME = "scurl"
+    }
+    if ($TargetVersion) {
+        $script:VERSION = $TargetVersion
+    } else {
+        $script:VERSION = Get-LatestVersion
+    }
+    $url = Get-DownloadUrl -Version $script:VERSION -OS $script:OS -Arch $script:ARCH
+    Invoke-ScurlDownload -Url $url -InstallPath $script:INSTALL_PATH -BinaryName $script:BINARY_NAME -Version $script:VERSION
+    Add-ToUserPath $script:INSTALL_PATH
+    Write-ScurlConfig
+}
+
+function Invoke-Update {
+    if (-not (Test-ScurlConfig)) {
+        throw "Error: scurl not installed. Run 'conf-scurl install' first."
+    }
+    Read-ScurlConfig
+    $latest = Get-LatestVersion
+    if ($script:VERSION -eq $latest) {
+        Write-Host "$script:BINARY_NAME v$script:VERSION is already the latest version."
+        return
+    }
+    Write-Host "Updating $script:BINARY_NAME v$script:VERSION -> v$latest..."
+    $script:VERSION = $latest
+    $url = Get-DownloadUrl -Version $script:VERSION -OS $script:OS -Arch $script:ARCH
+    Invoke-ScurlDownload -Url $url -InstallPath $script:INSTALL_PATH -BinaryName $script:BINARY_NAME -Version $script:VERSION
+    Write-ScurlConfig
+}
+
+function Invoke-Remove {
+    if (-not (Test-ScurlConfig)) {
+        throw "Error: scurl not installed."
+    }
+    Read-ScurlConfig
+    $binExe = Join-Path $script:INSTALL_PATH "$script:BINARY_NAME.exe"
+    if (Test-Path $binExe) { Remove-Item $binExe -Force }
+    $confPs1 = Join-Path $script:INSTALL_PATH "conf-scurl.ps1"
+    if (Test-Path $confPs1) { Remove-Item $confPs1 -Force }
+    $confCmd = Join-Path $script:INSTALL_PATH "conf-scurl.cmd"
+    if (Test-Path $confCmd) { Remove-Item $confCmd -Force }
+    Remove-FromUserPath $script:INSTALL_PATH
+    if (Test-Path $script:ConfigDir) { Remove-Item -Recurse -Force $script:ConfigDir }
+    Write-Host "Removed $script:BINARY_NAME."
+}
+
+function Show-Status {
+    if (-not (Test-ScurlConfig)) {
+        Write-Host "scurl is not installed. Run 'conf-scurl install'."
+        return
+    }
+    Read-ScurlConfig
+    Write-Host "$script:BINARY_NAME v$script:VERSION"
+    Write-Host "Path: $script:INSTALL_PATH\$script:BINARY_NAME.exe"
+    Write-Host "OS: $script:OS | Arch: $script:ARCH"
+    try {
+        $latest = Get-LatestVersion
+        if ($script:VERSION -eq $latest) {
+            Write-Host "Latest available: v$latest (up to date)"
+        } else {
+            Write-Host "Latest available: v$latest (update available!)"
+        }
+    } catch {
+        Write-Host "Latest available: (could not check)"
+    }
+}
+
+function Invoke-Config($Key, $Value) {
+    if (-not (Test-ScurlConfig)) {
+        throw "Error: no configuration found. Run 'conf-scurl install' first."
+    }
+    if (-not $Key) {
+        Get-Content $script:ConfigFile
+    } elseif (-not $Value) {
+        $line = Get-Content $script:ConfigFile | Where-Object { $_ -match "^$Key=" }
+        if ($line) { ($line -split '=', 2)[1] }
+    } else {
+        $lines = Get-Content $script:ConfigFile
+        $found = $false
+        $lines = $lines | ForEach-Object {
+            if ($_ -match "^$Key=") { "$Key=$Value"; $found = $true }
+            else { $_ }
+        }
+        if (-not $found) { $lines += "$Key=$Value" }
+        $lines | Set-Content $script:ConfigFile
+        Write-Host "$Key=$Value"
+    }
+}
+
+# --- Dispatch (only when run directly, not dot-sourced) ---
+if ($MyInvocation.InvocationName -ne '.') {
+    $command = if ($args.Count -gt 0) { $args[0] } else { "" }
+    switch ($command) {
+        "install" { Invoke-Install $(if ($args.Count -gt 1) { $args[1] } else { $null }) }
+        "update"  { Invoke-Update }
+        "remove"  { Invoke-Remove }
+        "status"  { Show-Status }
+        "config"  {
+            $k = if ($args.Count -gt 1) { $args[1] } else { $null }
+            $v = if ($args.Count -gt 2) { $args[2] } else { $null }
+            Invoke-Config $k $v
+        }
+        "--help"  { Show-Usage }
+        "-h"      { Show-Usage }
+        ""        { Show-Usage }
+        default   { Write-Error "Error: unknown command '$command'"; Show-Usage; exit 1 }
+    }
+}

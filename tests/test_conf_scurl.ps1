@@ -100,4 +100,11 @@ Remove-FromUserPath $fakePath
 $final = [Environment]::GetEnvironmentVariable("Path", "User")
 Assert-True ($final -notlike "*$fakePath*") "Remove-FromUserPath removes from PATH"
 
+# --- Test: command dispatch ---
+$output = powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PSScriptRoot/../conf-scurl.ps1" "--help" 2>&1 | Out-String
+Assert-Contains $output "Usage" "help shows usage"
+
+$output = powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PSScriptRoot/../conf-scurl.ps1" "status" 2>&1 | Out-String
+Assert-Contains $output "scurl" "status produces output"
+
 Show-Summary
