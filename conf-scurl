@@ -71,9 +71,9 @@ detect_libc() {
   else
     suggested="glibc"
   fi
-  if [ -t 0 ]; then
+  if [ -e /dev/tty ]; then
     printf "LibC detected: %s. Use this? [Y/n] " "$suggested"
-    read -r answer
+    answer=$(sh -c 'read -r a < /dev/tty; echo "$a"' 2>/dev/null) || answer=""
     case "$answer" in
       [nN]*) 
         if [ "$suggested" = "glibc" ]; then LIBC="musl"; else LIBC="glibc"; fi
@@ -178,12 +178,10 @@ cmd_install() {
     detect_libc
     INSTALL_PATH="${INSTALL_PATH:-$HOME/.local/bin}"
     BINARY_NAME="${BINARY_NAME:-scurl}"
-    if [ -t 0 ]; then
+    if [ -e /dev/tty ]; then
       printf "Install path [%s]: " "$INSTALL_PATH"
-      read -r _path
+      _path=$(sh -c 'read -r p < /dev/tty; echo "$p"' 2>/dev/null) || _path=""
       [ -n "$_path" ] && INSTALL_PATH="$_path"
-    else
-      echo "Install path: $INSTALL_PATH (default)"
     fi
   fi
   if [ -n "$_target_version" ]; then

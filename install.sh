@@ -22,12 +22,11 @@ if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
   exit 1
 fi
 
-printf "Install path [%s]: " "$DEFAULT_PATH"
-if [ -t 0 ]; then
-  read -r INSTALL_PATH
+if [ -t 0 ] || [ -e /dev/tty ]; then
+  printf "Install path [%s]: " "$DEFAULT_PATH"
+  INSTALL_PATH=$(sh -c 'read -r p < /dev/tty; echo "$p"' 2>/dev/null) || INSTALL_PATH=""
 else
   INSTALL_PATH=""
-  echo "$DEFAULT_PATH"
 fi
 INSTALL_PATH="${INSTALL_PATH:-$DEFAULT_PATH}"
 mkdir -p "$INSTALL_PATH"
