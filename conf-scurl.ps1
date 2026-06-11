@@ -88,3 +88,19 @@ function Invoke-ScurlDownload($Url, $InstallPath, $BinaryName, $Version) {
     Remove-Item -Recurse -Force $tmpDir
     Write-Host "Done: $BinaryName v$Version installed in $InstallPath\$BinaryName.exe"
 }
+
+function Add-ToUserPath($Dir) {
+    $current = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($current -notlike "*$Dir*") {
+        [Environment]::SetEnvironmentVariable("Path", "$Dir;$current", "User")
+        $env:Path = "$Dir;$env:Path"
+    }
+}
+
+function Remove-FromUserPath($Dir) {
+    $current = [Environment]::GetEnvironmentVariable("Path", "User")
+    $parts = $current -split ';' | Where-Object { $_ -ne $Dir -and $_ -ne "" }
+    [Environment]::SetEnvironmentVariable("Path", ($parts -join ';'), "User")
+    $envParts = $env:Path -split ';' | Where-Object { $_ -ne $Dir -and $_ -ne "" }
+    $env:Path = $envParts -join ';'
+}

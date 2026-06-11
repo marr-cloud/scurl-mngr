@@ -87,4 +87,17 @@ Assert-True (Test-Path (Join-Path $testDir "scurl.exe")) "scurl.exe exists after
 
 Remove-Item -Recurse -Force $testDir
 
+# --- Test: PATH management ---
+. "$PSScriptRoot/../conf-scurl.ps1"
+
+$fakePath = "C:\scurl-test-path-$(Get-Random)"
+
+Add-ToUserPath $fakePath
+$after = [Environment]::GetEnvironmentVariable("Path", "User")
+Assert-Contains $after $fakePath "Add-ToUserPath adds to PATH"
+
+Remove-FromUserPath $fakePath
+$final = [Environment]::GetEnvironmentVariable("Path", "User")
+Assert-True ($final -notlike "*$fakePath*") "Remove-FromUserPath removes from PATH"
+
 Show-Summary
