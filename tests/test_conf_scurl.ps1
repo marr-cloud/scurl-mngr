@@ -33,6 +33,31 @@ function Show-Summary {
     if ($script:Fail -gt 0) { exit 1 } else { exit 0 }
 }
 
-# Tests will be added in subsequent tasks
+# --- Test: config I/O ---
+. "$PSScriptRoot/../conf-scurl.ps1"
+
+$testDir = Join-Path ([System.IO.Path]::GetTempPath()) "scurl-test-$(Get-Random)"
+New-Item -ItemType Directory -Path $testDir -Force | Out-Null
+
+$script:ConfigDir = $testDir
+$script:ConfigFile = Join-Path $testDir "config"
+$script:VERSION = "8.20.0"
+$script:INSTALL_PATH = "C:\test"
+$script:BINARY_NAME = "scurl"
+$script:OS = "windows"
+$script:ARCH = "x86_64"
+
+Write-ScurlConfig
+$content = Get-Content $script:ConfigFile -Raw
+Assert-Contains $content "VERSION=8.20.0" "write config VERSION"
+Assert-Contains $content "INSTALL_PATH=C:\test" "write config INSTALL_PATH"
+
+$script:VERSION = ""
+$script:INSTALL_PATH = ""
+Read-ScurlConfig
+Assert-Eq $script:VERSION "8.20.0" "read config VERSION"
+Assert-Eq $script:INSTALL_PATH "C:\test" "read config INSTALL_PATH"
+
+Remove-Item -Recurse -Force $testDir
 
 Show-Summary
