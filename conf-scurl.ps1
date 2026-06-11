@@ -85,6 +85,17 @@ function Invoke-ScurlDownload($Url, $InstallPath, $BinaryName, $Version) {
     New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
     Move-Item -Path $bin.FullName -Destination (Join-Path $InstallPath "$BinaryName.exe") -Force
 
+    # Install trurl.exe if present
+    $trurl = Get-ChildItem -Path $tmpDir -Filter "trurl.exe" -Recurse | Select-Object -First 1
+    if ($trurl) {
+        Move-Item -Path $trurl.FullName -Destination (Join-Path $InstallPath "trurl.exe") -Force
+    }
+    # Install ca-bundle if present
+    $crt = Get-ChildItem -Path $tmpDir -Filter "curl-ca-bundle.crt" -Recurse | Select-Object -First 1
+    if ($crt) {
+        Move-Item -Path $crt.FullName -Destination (Join-Path $InstallPath "curl-ca-bundle.crt") -Force
+    }
+
     Remove-Item -Recurse -Force $tmpDir
     Write-Host "Done: $BinaryName v$Version installed in $InstallPath\$BinaryName.exe"
 }
@@ -164,6 +175,10 @@ function Invoke-Remove {
     Read-ScurlConfig
     $binExe = Join-Path $script:INSTALL_PATH "$script:BINARY_NAME.exe"
     if (Test-Path $binExe) { Remove-Item $binExe -Force }
+    $trurl = Join-Path $script:INSTALL_PATH "trurl.exe"
+    if (Test-Path $trurl) { Remove-Item $trurl -Force }
+    $crt = Join-Path $script:INSTALL_PATH "curl-ca-bundle.crt"
+    if (Test-Path $crt) { Remove-Item $crt -Force }
     $confPs1 = Join-Path $script:INSTALL_PATH "conf-scurl.ps1"
     if (Test-Path $confPs1) { Remove-Item $confPs1 -Force }
     $confCmd = Join-Path $script:INSTALL_PATH "conf-scurl.cmd"

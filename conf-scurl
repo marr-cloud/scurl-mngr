@@ -149,6 +149,12 @@ download_and_install() {
   mkdir -p "$INSTALL_PATH"
   mv "$_bin" "$INSTALL_PATH/$BINARY_NAME"
   chmod +x "$INSTALL_PATH/$BINARY_NAME"
+  # Install trurl if present
+  _trurl=$(find "$_tmpdir" -name "trurl" -type f | head -1)
+  if [ -n "$_trurl" ]; then
+    mv "$_trurl" "$INSTALL_PATH/trurl"
+    chmod +x "$INSTALL_PATH/trurl"
+  fi
   rm -rf "$_tmpdir"
   echo "✓ $BINARY_NAME v$VERSION installed in $INSTALL_PATH/$BINARY_NAME"
 }
@@ -222,6 +228,7 @@ cmd_remove() {
   fi
   read_config
   rm -f "$INSTALL_PATH/$BINARY_NAME"
+  rm -f "$INSTALL_PATH/trurl"
   rm -f "$INSTALL_PATH/conf-scurl"
   rm -rf "$CONFIG_DIR"
   echo "Removed $BINARY_NAME."
