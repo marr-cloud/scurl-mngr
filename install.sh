@@ -23,7 +23,12 @@ if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
 fi
 
 printf "Install path [%s]: " "$DEFAULT_PATH"
-read -r INSTALL_PATH
+if [ -t 0 ]; then
+  read -r INSTALL_PATH
+else
+  INSTALL_PATH=""
+  echo "$DEFAULT_PATH"
+fi
 INSTALL_PATH="${INSTALL_PATH:-$DEFAULT_PATH}"
 mkdir -p "$INSTALL_PATH"
 

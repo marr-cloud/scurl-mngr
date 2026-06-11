@@ -71,16 +71,21 @@ detect_libc() {
   else
     suggested="glibc"
   fi
-  printf "LibC detected: %s. Use this? [Y/n] " "$suggested"
-  read -r answer
-  case "$answer" in
-    [nN]*) 
-      if [ "$suggested" = "glibc" ]; then LIBC="musl"; else LIBC="glibc"; fi
-      ;;
-    *)
-      LIBC="$suggested"
-      ;;
-  esac
+  if [ -t 0 ]; then
+    printf "LibC detected: %s. Use this? [Y/n] " "$suggested"
+    read -r answer
+    case "$answer" in
+      [nN]*) 
+        if [ "$suggested" = "glibc" ]; then LIBC="musl"; else LIBC="glibc"; fi
+        ;;
+      *)
+        LIBC="$suggested"
+        ;;
+    esac
+  else
+    LIBC="$suggested"
+    echo "LibC: $LIBC (auto-detected)"
+  fi
 }
 
 asset_arch() {
@@ -173,9 +178,13 @@ cmd_install() {
     detect_libc
     INSTALL_PATH="${INSTALL_PATH:-$HOME/.local/bin}"
     BINARY_NAME="${BINARY_NAME:-scurl}"
-    printf "Install path [%s]: " "$INSTALL_PATH"
-    read -r _path
-    [ -n "$_path" ] && INSTALL_PATH="$_path"
+    if [ -t 0 ]; then
+      printf "Install path [%s]: " "$INSTALL_PATH"
+      read -r _path
+      [ -n "$_path" ] && INSTALL_PATH="$_path"
+    else
+      echo "Install path: $INSTALL_PATH (default)"
+    fi
   fi
   if [ -n "$_target_version" ]; then
     VERSION="$_target_version"
