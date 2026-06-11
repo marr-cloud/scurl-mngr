@@ -129,4 +129,11 @@ fi
 # Cleanup
 rm -rf "$TEST_INSTALL_DIR"
 
+# --- Test: command dispatch ---
+output=$(sh ./conf-scurl status 2>&1) || true
+assert_contains "$output" "scurl" "status command produces output"
+
+output=$(sh ./conf-scurl --help 2>&1) || true
+assert_contains "$output" "Usage" "help shows usage"
+
 summary

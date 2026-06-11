@@ -147,3 +147,131 @@ download_and_install() {
   rm -rf "$_tmpdir"
   echo "✓ $BINARY_NAME v$VERSION installed in $INSTALL_PATH/$BINARY_NAME"
 }
+
+usage() {
+  cat <<EOF
+Usage: conf-scurl <command> [args]
+
+Commands:
+  install [version]  Install scurl (latest or specific version)
+  update             Update to latest version
+  remove             Remove scurl and conf-scurl
+  status             Show installed version and update availability
+  config [key] [val] View or edit configuration
+
+EOF
+}
+
+cmd_install() {
+  _target_version="${1:-}"
+  check_deps
+  if config_exists; then
+    read_config
+  else
+    detect_os
+    detect_arch
+    detect_libc
+    INSTALL_PATH="${INSTALL_PATH:-$HOME/.local/bin}"
+    BINARY_NAME="${BINARY_NAME:-scurl}"
+    printf "Install path [%s]: " "$INSTALL_PATH"
+    read -r _path
+    [ -n "$_path" ] && INSTALL_PATH="$_path"
+  fi
+  if [ -n "$_target_version" ]; then
+    VERSION="$_target_version"
+    REMOTE_VERSION="$_target_version"
+  else
+    fetch_latest_version
+    VERSION="$REMOTE_VERSION"
+  fi
+  get_download_url "$VERSION"
+  download_and_install
+  write_config
+}
+
+cmd_update() {
+  check_deps
+  if ! config_exists; then
+    echo "Error: scurl not installed. Run 'conf-scurl install' first." >&2
+    return 1
+  fi
+  read_config
+  fetch_latest_version
+  if [ "$VERSION" = "$REMOTE_VERSION" ]; then
+    echo "$BINARY_NAME v$VERSION is already the latest version."
+    return 0
+  fi
+  echo "Updating $BINARY_NAME v$VERSION -> v$REMOTE_VERSION..."
+  VERSION="$REMOTE_VERSION"
+  get_download_url "$VERSION"
+  download_and_install
+  write_config
+}
+
+cmd_remove() {
+  if ! config_exists; then
+    echo "Error: scurl not installed." >&2
+    return 1
+  fi
+  read_config
+  rm -f "$INSTALL_PATH/$BINARY_NAME"
+  rm -f "$INSTALL_PATH/conf-scurl"
+  rm -rf "$CONFIG_DIR"
+  echo "Removed $BINARY_NAME."
+}
+
+cmd_status() {
+  if ! config_exists; then
+    echo "scurl is not installed. Run 'conf-scurl install'."
+    return 0
+  fi
+  read_config
+  echo "$BINARY_NAME v$VERSION"
+  echo "Path: $INSTALL_PATH/$BINARY_NAME"
+  printf "OS: %s | Arch: %s" "$OS" "$ARCH"
+  [ -n "${LIBC:-}" ] && printf " | LibC: %s" "$LIBC"
+  echo ""
+  if fetch_latest_version 2>/dev/null; then
+    if [ "$VERSION" = "$REMOTE_VERSION" ]; then
+      echo "Latest available: v$REMOTE_VERSION (up to date)"
+    else
+      echo "Latest available: v$REMOTE_VERSION (update available!)"
+    fi
+  else
+    echo "Latest available: (could not check)"
+  fi
+}
+
+cmd_config() {
+  if ! config_exists; then
+    echo "Error: no configuration found. Run 'conf-scurl install' first." >&2
+    return 1
+  fi
+  if [ $# -eq 0 ]; then
+    cat "$CONFIG_FILE"
+  elif [ $# -eq 1 ]; then
+    grep "^${1}=" "$CONFIG_FILE" | cut -d= -f2-
+  else
+    _key="$1"
+    _val="$2"
+    if grep -q "^${_key}=" "$CONFIG_FILE"; then
+      sed -i "s|^${_key}=.*|${_key}=${_val}|" "$CONFIG_FILE"
+    else
+      echo "${_key}=${_val}" >> "$CONFIG_FILE"
+    fi
+    echo "${_key}=${_val}"
+  fi
+}
+
+# Only run dispatch when executed directly (not sourced)
+if [ "${SCURL_SOURCED:-0}" != "1" ]; then
+  case "${1:-}" in
+    install) shift; cmd_install "$@" ;;
+    update)  cmd_update ;;
+    remove)  cmd_remove ;;
+    status)  cmd_status ;;
+    config)  shift; cmd_config "$@" ;;
+    --help|-h|"") usage ;;
+    *)       echo "Error: unknown command '$1'" >&2; usage; exit 1 ;;
+  esac
+fi
