@@ -41,6 +41,8 @@ summary() {
   [ "$FAIL" -eq 0 ] && exit 0 || exit 1
 }
 
-# Tests will be added in subsequent tasks
+# --- Test: dependency check ---
+output=$(SCURL_SOURCED=1 sh -c '. ./conf-scurl && check_deps' 2>&1)
+assert_exit $? 0 "check_deps succeeds when deps present"
 
 summary
