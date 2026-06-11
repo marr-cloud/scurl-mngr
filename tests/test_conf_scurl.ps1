@@ -107,4 +107,9 @@ Assert-Contains $output "Usage" "help shows usage"
 $output = powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PSScriptRoot/../conf-scurl.ps1" "status" 2>&1 | Out-String
 Assert-Contains $output "scurl" "status produces output"
 
+# --- Test: install.ps1 syntax ---
+$errors = $null
+[System.Management.Automation.PSParser]::Tokenize((Get-Content "$PSScriptRoot/../install.ps1" -Raw), [ref]$errors) | Out-Null
+Assert-Eq $errors.Count 0 "install.ps1 has valid syntax"
+
 Show-Summary
