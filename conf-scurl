@@ -42,3 +42,52 @@ read_config() {
 config_exists() {
   [ -f "$CONFIG_FILE" ]
 }
+
+detect_os() {
+  case "$(uname -s)" in
+    Linux)  OS="linux" ;;
+    Darwin) OS="macos" ;;
+    *)      echo "Error: unsupported OS '$(uname -s)'" >&2; return 1 ;;
+  esac
+}
+
+detect_arch() {
+  case "$(uname -m)" in
+    x86_64)         ARCH="x86_64" ;;
+    aarch64|arm64)  ARCH="aarch64" ;;
+    armv7l)         ARCH="armv7" ;;
+    i686|i386)      ARCH="i686" ;;
+    *)              echo "Error: unsupported architecture '$(uname -m)'" >&2; return 1 ;;
+  esac
+}
+
+detect_libc() {
+  if [ "$OS" != "linux" ]; then
+    LIBC=""
+    return
+  fi
+  if ldd --version 2>&1 | grep -qi musl; then
+    suggested="musl"
+  else
+    suggested="glibc"
+  fi
+  printf "LibC detected: %s. Use this? [Y/n] " "$suggested"
+  read -r answer
+  case "$answer" in
+    [nN]*) 
+      if [ "$suggested" = "glibc" ]; then LIBC="musl"; else LIBC="glibc"; fi
+      ;;
+    *)
+      LIBC="$suggested"
+      ;;
+  esac
+}
+
+asset_arch() {
+  # macOS assets use "arm64" not "aarch64"
+  if [ "$OS" = "macos" ] && [ "$ARCH" = "aarch64" ]; then
+    echo "arm64"
+  else
+    echo "$ARCH"
+  fi
+}

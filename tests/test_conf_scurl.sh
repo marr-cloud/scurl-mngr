@@ -76,4 +76,19 @@ assert_eq "$INSTALL_PATH" "/tmp/test" "read_config reads INSTALL_PATH"
 # Cleanup
 rm -rf "$TEST_CONFIG_DIR"
 
+# --- Test: platform detection ---
+SCURL_SOURCED=1 . ./conf-scurl
+
+detect_os
+assert_contains "linux macos" "$OS" "detect_os returns linux or macos"
+
+detect_arch
+# Just verify it sets ARCH to something non-empty
+if [ -n "$ARCH" ]; then
+  PASS=$((PASS + 1))
+else
+  FAIL=$((FAIL + 1))
+  echo "FAIL: detect_arch returned empty ARCH" >&2
+fi
+
 summary
