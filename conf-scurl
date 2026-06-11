@@ -127,3 +127,23 @@ get_download_url() {
     return 1
   fi
 }
+
+download_and_install() {
+  _tmpdir=$(mktemp -d)
+  _archive="$_tmpdir/curl.tar.xz"
+  echo "Downloading $(basename "$DOWNLOAD_URL")..."
+  http_get "$DOWNLOAD_URL" > "$_archive"
+  tar -xJf "$_archive" -C "$_tmpdir"
+  # Find the curl binary in extracted contents
+  _bin=$(find "$_tmpdir" -name "curl" -type f | head -1)
+  if [ -z "$_bin" ]; then
+    echo "Error: curl binary not found in archive" >&2
+    rm -rf "$_tmpdir"
+    return 1
+  fi
+  mkdir -p "$INSTALL_PATH"
+  mv "$_bin" "$INSTALL_PATH/$BINARY_NAME"
+  chmod +x "$INSTALL_PATH/$BINARY_NAME"
+  rm -rf "$_tmpdir"
+  echo "✓ $BINARY_NAME v$VERSION installed in $INSTALL_PATH/$BINARY_NAME"
+}

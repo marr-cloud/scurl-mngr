@@ -103,4 +103,30 @@ else
   echo "FAIL: fetch_latest_version returned '$REMOTE_VERSION', expected semver" >&2
 fi
 
+# --- Test: download and install ---
+SCURL_SOURCED=1 . ./conf-scurl
+
+TEST_INSTALL_DIR=$(mktemp -d)
+INSTALL_PATH="$TEST_INSTALL_DIR"
+BINARY_NAME="scurl"
+OS="linux"
+ARCH="x86_64"
+LIBC="glibc"
+
+fetch_latest_version
+VERSION="$REMOTE_VERSION"
+get_download_url "$VERSION"
+download_and_install
+
+# Verify binary exists and is executable
+if [ -x "$TEST_INSTALL_DIR/scurl" ]; then
+  PASS=$((PASS + 1))
+else
+  FAIL=$((FAIL + 1))
+  echo "FAIL: scurl not installed or not executable in $TEST_INSTALL_DIR" >&2
+fi
+
+# Cleanup
+rm -rf "$TEST_INSTALL_DIR"
+
 summary
