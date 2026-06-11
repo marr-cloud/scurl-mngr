@@ -91,3 +91,39 @@ asset_arch() {
     echo "$ARCH"
   fi
 }
+
+REPO="stunnel/static-curl"
+API_URL="https://api.github.com/repos/$REPO/releases"
+
+http_get() {
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$1"
+  else
+    wget -qO- "$1"
+  fi
+}
+
+fetch_latest_version() {
+  REMOTE_VERSION=$(http_get "$API_URL/latest" | jq -r '.tag_name')
+  if [ -z "$REMOTE_VERSION" ] || [ "$REMOTE_VERSION" = "null" ]; then
+    echo "Error: cannot reach GitHub API. Check your internet connection." >&2
+    return 1
+  fi
+}
+
+get_download_url() {
+  _version="${1:-$REMOTE_VERSION}"
+  _arch=$(asset_arch)
+  if [ "$OS" = "linux" ]; then
+    _pattern="curl-${OS}-${_arch}-${LIBC}-${_version}.tar.xz"
+  else
+    _pattern="curl-${OS}-${_arch}-${_version}.tar.xz"
+  fi
+  DOWNLOAD_URL=$(http_get "$API_URL/tags/$_version" | jq -r --arg name "$_pattern" '.assets[] | select(.name == $name) | .browser_download_url')
+  if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
+    echo "Error: no release found for $_pattern" >&2
+    echo "Available assets for $_version:" >&2
+    http_get "$API_URL/tags/$_version" | jq -r '.assets[].name' >&2
+    return 1
+  fi
+}

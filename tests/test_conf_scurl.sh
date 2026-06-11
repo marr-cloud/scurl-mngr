@@ -91,4 +91,16 @@ else
   echo "FAIL: detect_arch returned empty ARCH" >&2
 fi
 
+# --- Test: GitHub API ---
+SCURL_SOURCED=1 . ./conf-scurl
+
+# Test fetch_latest_version (requires network)
+fetch_latest_version
+if echo "$REMOTE_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+  PASS=$((PASS + 1))
+else
+  FAIL=$((FAIL + 1))
+  echo "FAIL: fetch_latest_version returned '$REMOTE_VERSION', expected semver" >&2
+fi
+
 summary
