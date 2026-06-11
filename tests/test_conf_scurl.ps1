@@ -67,4 +67,10 @@ $result = Get-ScurlPlatform
 Assert-Eq $result.OS "windows" "detect OS"
 Assert-True ($result.Arch -ne "") "detect arch non-empty"
 
+# --- Test: GitHub API ---
+. "$PSScriptRoot/../conf-scurl.ps1"
+
+$version = Get-LatestVersion
+Assert-True ($version -match '^\d+\.\d+\.\d+$') "fetch latest version is semver: $version"
+
 Show-Summary

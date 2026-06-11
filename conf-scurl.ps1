@@ -40,3 +40,29 @@ function Get-ScurlPlatform {
     }
     return @{ OS = $os; Arch = $arch }
 }
+
+$script:RepoApiUrl = "https://api.github.com/repos/stunnel/static-curl/releases"
+
+function Get-LatestVersion {
+    try {
+        $release = Invoke-RestMethod -Uri "$script:RepoApiUrl/latest" -UseBasicParsing
+        return $release.tag_name
+    } catch {
+        throw "Error: cannot reach GitHub API. Check your internet connection."
+    }
+}
+
+function Get-DownloadUrl($Version, $OS, $Arch) {
+    $pattern = "curl-$OS-$Arch-$Version.tar.xz"
+    try {
+        $release = Invoke-RestMethod -Uri "$script:RepoApiUrl/tags/$Version" -UseBasicParsing
+    } catch {
+        throw "Error: cannot fetch release $Version from GitHub API."
+    }
+    $asset = $release.assets | Where-Object { $_.name -eq $pattern }
+    if (-not $asset) {
+        $available = ($release.assets | ForEach-Object { $_.name }) -join "`n"
+        throw "Error: no release found for $pattern`nAvailable assets:`n$available"
+    }
+    return $asset.browser_download_url
+}
