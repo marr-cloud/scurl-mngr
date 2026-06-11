@@ -36,3 +36,27 @@ Stored in `~/.config/scurl/config`:
 | OS | Operating system |
 | ARCH | Architecture |
 | LIBC | C library (Linux only: glibc/musl) |
+
+## Windows
+
+### Quick Install (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/marr-cloud/scurl-mngr/main/install.ps1 | iex
+```
+
+### Requirements (Windows)
+
+- Windows 10+ (includes PowerShell 5.1 and tar)
+
+### Commands (same as Unix)
+
+```
+conf-scurl install [version]
+conf-scurl update
+conf-scurl remove
+conf-scurl status
+conf-scurl config [key] [val]
+```
+
+Configuration stored in `%LOCALAPPDATA%\scurl\config`.
