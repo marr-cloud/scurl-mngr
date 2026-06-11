@@ -66,3 +66,25 @@ function Get-DownloadUrl($Version, $OS, $Arch) {
     }
     return $asset.browser_download_url
 }
+
+function Invoke-ScurlDownload($Url, $InstallPath, $BinaryName, $Version) {
+    $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) "scurl-tmp-$(Get-Random)"
+    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+    $archive = Join-Path $tmpDir "curl.tar.xz"
+
+    Write-Host "Downloading $(Split-Path $Url -Leaf)..."
+    Invoke-WebRequest -Uri $Url -OutFile $archive -UseBasicParsing
+
+    tar -xJf $archive -C $tmpDir 2>$null
+    $bin = Get-ChildItem -Path $tmpDir -Filter "curl.exe" -Recurse | Select-Object -First 1
+    if (-not $bin) {
+        Remove-Item -Recurse -Force $tmpDir
+        throw "Error: curl.exe not found in archive"
+    }
+
+    New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
+    Move-Item -Path $bin.FullName -Destination (Join-Path $InstallPath "$BinaryName.exe") -Force
+
+    Remove-Item -Recurse -Force $tmpDir
+    Write-Host "Done: $BinaryName v$Version installed in $InstallPath\$BinaryName.exe"
+}

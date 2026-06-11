@@ -73,4 +73,18 @@ Assert-True ($result.Arch -ne "") "detect arch non-empty"
 $version = Get-LatestVersion
 Assert-True ($version -match '^\d+\.\d+\.\d+$') "fetch latest version is semver: $version"
 
+# --- Test: download and install ---
+. "$PSScriptRoot/../conf-scurl.ps1"
+
+$testDir = Join-Path ([System.IO.Path]::GetTempPath()) "scurl-dl-test-$(Get-Random)"
+New-Item -ItemType Directory -Path $testDir -Force | Out-Null
+
+$version = Get-LatestVersion
+$url = Get-DownloadUrl -Version $version -OS "windows" -Arch "x86_64"
+Invoke-ScurlDownload -Url $url -InstallPath $testDir -BinaryName "scurl" -Version $version
+
+Assert-True (Test-Path (Join-Path $testDir "scurl.exe")) "scurl.exe exists after download"
+
+Remove-Item -Recurse -Force $testDir
+
 Show-Summary
