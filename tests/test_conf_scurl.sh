@@ -45,4 +45,35 @@ summary() {
 output=$(SCURL_SOURCED=1 sh -c '. ./conf-scurl && check_deps' 2>&1)
 assert_exit $? 0 "check_deps succeeds when deps present"
 
+# --- Test: config I/O ---
+TEST_CONFIG_DIR=$(mktemp -d)
+TEST_CONFIG_FILE="$TEST_CONFIG_DIR/config"
+
+# Source conf-scurl functions
+SCURL_SOURCED=1 . ./conf-scurl
+
+# Test write_config
+CONFIG_DIR="$TEST_CONFIG_DIR"
+CONFIG_FILE="$TEST_CONFIG_FILE"
+VERSION="8.20.0"
+INSTALL_PATH="/tmp/test"
+BINARY_NAME="scurl"
+OS="linux"
+ARCH="x86_64"
+LIBC="glibc"
+
+write_config
+assert_contains "$(cat "$TEST_CONFIG_FILE")" "VERSION=8.20.0" "write_config writes VERSION"
+assert_contains "$(cat "$TEST_CONFIG_FILE")" "INSTALL_PATH=/tmp/test" "write_config writes INSTALL_PATH"
+
+# Test read_config
+VERSION=""
+INSTALL_PATH=""
+read_config
+assert_eq "$VERSION" "8.20.0" "read_config reads VERSION"
+assert_eq "$INSTALL_PATH" "/tmp/test" "read_config reads INSTALL_PATH"
+
+# Cleanup
+rm -rf "$TEST_CONFIG_DIR"
+
 summary

@@ -17,3 +17,28 @@ check_deps() {
     return 1
   fi
 }
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/scurl"
+CONFIG_FILE="$CONFIG_DIR/config"
+
+write_config() {
+  mkdir -p "$CONFIG_DIR"
+  cat > "$CONFIG_FILE" <<EOF
+VERSION=$VERSION
+INSTALL_PATH=$INSTALL_PATH
+BINARY_NAME=$BINARY_NAME
+OS=$OS
+ARCH=$ARCH
+LIBC=$LIBC
+EOF
+}
+
+read_config() {
+  if [ -f "$CONFIG_FILE" ]; then
+    . "$CONFIG_FILE"
+  fi
+}
+
+config_exists() {
+  [ -f "$CONFIG_FILE" ]
+}
