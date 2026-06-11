@@ -136,4 +136,8 @@ assert_contains "$output" "scurl" "status command produces output"
 output=$(sh ./conf-scurl --help 2>&1) || true
 assert_contains "$output" "Usage" "help shows usage"
 
+# --- Test: install.sh syntax ---
+sh -n ./install.sh 2>&1
+assert_exit $? 0 "install.sh has valid syntax"
+
 summary
