@@ -84,8 +84,31 @@ $url = Get-DownloadUrl -Version $version -OS "windows" -Arch "x86_64"
 Invoke-ScurlDownload -Url $url -InstallPath $testDir -BinaryName "scurl" -Version $version
 
 Assert-True (Test-Path (Join-Path $testDir "scurl.exe")) "scurl.exe exists after download"
+Assert-Eq (Get-InstalledCurlVersion -InstallPath $testDir -BinaryName "scurl") $version "installed binary reports requested version"
 
 Remove-Item -Recurse -Force $testDir
+
+# --- Test: version verification catches a mismatched/non-functional binary ---
+. "$PSScriptRoot/../conf-scurl.ps1"
+
+$badDir = Join-Path ([System.IO.Path]::GetTempPath()) "scurl-badver-test-$(Get-Random)"
+New-Item -ItemType Directory -Path $badDir -Force | Out-Null
+Set-Content -Path (Join-Path $badDir "scurl.exe") -Value "not a real binary"
+Assert-Eq (Get-InstalledCurlVersion -InstallPath $badDir -BinaryName "scurl") $null "Get-InstalledCurlVersion returns null for a non-functional binary"
+Remove-Item -Recurse -Force $badDir
+
+$mismatchDir = Join-Path ([System.IO.Path]::GetTempPath()) "scurl-mismatch-test-$(Get-Random)"
+New-Item -ItemType Directory -Path $mismatchDir -Force | Out-Null
+$version = Get-LatestVersion
+$url = Get-DownloadUrl -Version $version -OS "windows" -Arch "x86_64"
+$threw = $false
+try {
+    Invoke-ScurlDownload -Url $url -InstallPath $mismatchDir -BinaryName "scurl" -Version "9.9.9"
+} catch {
+    $threw = $true
+}
+Assert-True $threw "Invoke-ScurlDownload throws when installed version does not match requested Version"
+Remove-Item -Recurse -Force $mismatchDir
 
 # --- Test: PATH management ---
 . "$PSScriptRoot/../conf-scurl.ps1"

@@ -67,6 +67,20 @@ function Get-DownloadUrl($Version, $OS, $Arch) {
     return $asset.browser_download_url
 }
 
+function Get-InstalledCurlVersion($InstallPath, $BinaryName) {
+    $exe = Join-Path $InstallPath "$BinaryName.exe"
+    if (-not (Test-Path $exe)) { return $null }
+    try {
+        $output = & $exe --version 2>&1 | Select-Object -First 1
+    } catch {
+        return $null
+    }
+    if ($output -match '(\d+\.\d+\.\d+)') {
+        return $Matches[1]
+    }
+    return $null
+}
+
 function Invoke-ScurlDownload($Url, $InstallPath, $BinaryName, $Version) {
     $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) "scurl-tmp-$(Get-Random)"
     New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
@@ -76,6 +90,10 @@ function Invoke-ScurlDownload($Url, $InstallPath, $BinaryName, $Version) {
     Invoke-WebRequest -Uri $Url -OutFile $archive -UseBasicParsing
 
     tar -xJf $archive -C $tmpDir 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Remove-Item -Recurse -Force $tmpDir
+        throw "Error: failed to extract archive (tar exited with code $LASTEXITCODE)"
+    }
     $bin = Get-ChildItem -Path $tmpDir -Filter "curl.exe" -Recurse | Select-Object -First 1
     if (-not $bin) {
         Remove-Item -Recurse -Force $tmpDir
@@ -97,6 +115,12 @@ function Invoke-ScurlDownload($Url, $InstallPath, $BinaryName, $Version) {
     }
 
     Remove-Item -Recurse -Force $tmpDir
+
+    $actual = Get-InstalledCurlVersion -InstallPath $InstallPath -BinaryName $BinaryName
+    if ($actual -ne $Version) {
+        throw "Error: expected v$Version but installed binary reports v$actual (or failed to run) - the update did not take effect. Close any running $BinaryName.exe processes and retry."
+    }
+
     Write-Host "Done: $BinaryName v$Version installed in $InstallPath\$BinaryName.exe"
 }
 

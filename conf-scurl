@@ -133,6 +133,12 @@ get_download_url() {
   fi
 }
 
+get_installed_version() {
+  _bin_path="$1"
+  [ -x "$_bin_path" ] || return 0
+  "$_bin_path" --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
+}
+
 download_and_install() {
   _tmpdir=$(mktemp -d)
   _archive="$_tmpdir/curl.tar.xz"
@@ -156,6 +162,13 @@ download_and_install() {
     chmod +x "$INSTALL_PATH/trurl"
   fi
   rm -rf "$_tmpdir"
+
+  _actual=$(get_installed_version "$INSTALL_PATH/$BINARY_NAME")
+  if [ "$_actual" != "$VERSION" ]; then
+    echo "Error: expected v$VERSION but installed binary reports v${_actual:-<none>} (or failed to run) - the update did not take effect. Close any running $BINARY_NAME processes and retry." >&2
+    return 1
+  fi
+
   echo "✓ $BINARY_NAME v$VERSION installed in $INSTALL_PATH/$BINARY_NAME"
 }
 

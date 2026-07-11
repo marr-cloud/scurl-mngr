@@ -126,8 +126,40 @@ else
   echo "FAIL: scurl not installed or not executable in $TEST_INSTALL_DIR" >&2
 fi
 
+# Verify the installed binary actually reports the requested version
+assert_eq "$(get_installed_version "$TEST_INSTALL_DIR/scurl")" "$VERSION" "installed binary reports requested version"
+
 # Cleanup
 rm -rf "$TEST_INSTALL_DIR"
+
+# --- Test: version verification catches a mismatched/non-functional binary ---
+SCURL_SOURCED=1 . ./conf-scurl
+
+TEST_BAD_DIR=$(mktemp -d)
+cat > "$TEST_BAD_DIR/scurl" <<'EOF'
+#!/bin/sh
+echo "curl 1.0.0 (stub)"
+EOF
+chmod +x "$TEST_BAD_DIR/scurl"
+assert_eq "$(get_installed_version "$TEST_BAD_DIR/scurl")" "1.0.0" "get_installed_version parses a stub binary's version"
+
+INSTALL_PATH="$TEST_BAD_DIR"
+BINARY_NAME="scurl"
+OS="linux"
+ARCH="x86_64"
+LIBC="glibc"
+fetch_latest_version
+VERSION="9.9.9" # deliberately wrong so the real downloaded binary won't match
+get_download_url "$REMOTE_VERSION"
+
+if download_and_install >/dev/null 2>&1; then
+  _rc=0
+else
+  _rc=$?
+fi
+assert_eq "$_rc" "1" "download_and_install fails when installed version does not match requested VERSION"
+
+rm -rf "$TEST_BAD_DIR"
 
 # --- Test: command dispatch ---
 output=$(sh ./conf-scurl status 2>&1) || true
