@@ -81,6 +81,14 @@ function Get-InstalledCurlVersion($InstallPath, $BinaryName) {
     return $null
 }
 
+function Test-InstalledVersion($Expected, $Actual) {
+    # curl reports only MAJOR.MINOR.PATCH. static-curl release tags may carry a
+    # packaging revision (e.g. 8.23.0-1) that the binary cannot report, so
+    # compare against the upstream version portion only.
+    if (-not $Actual) { return $false }
+    return $Actual -eq ($Expected -split '-', 2)[0]
+}
+
 function Invoke-ScurlDownload($Url, $InstallPath, $BinaryName, $Version) {
     $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) "scurl-tmp-$(Get-Random)"
     New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
@@ -117,7 +125,7 @@ function Invoke-ScurlDownload($Url, $InstallPath, $BinaryName, $Version) {
     Remove-Item -Recurse -Force $tmpDir
 
     $actual = Get-InstalledCurlVersion -InstallPath $InstallPath -BinaryName $BinaryName
-    if ($actual -ne $Version) {
+    if (-not (Test-InstalledVersion -Expected $Version -Actual $actual)) {
         throw "Error: expected v$Version but installed binary reports v$actual (or failed to run) - the update did not take effect. Close any running $BinaryName.exe processes and retry."
     }
 

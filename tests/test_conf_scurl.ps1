@@ -71,7 +71,15 @@ Assert-True ($result.Arch -ne "") "detect arch non-empty"
 . "$PSScriptRoot/../conf-scurl.ps1"
 
 $version = Get-LatestVersion
-Assert-True ($version -match '^\d+\.\d+\.\d+$') "fetch latest version is semver: $version"
+Assert-True ($version -match '^\d+\.\d+\.\d+(-\d+)?$') "fetch latest version is semver (optional packaging suffix): $version"
+
+# --- Test: version match ignores packaging suffix ---
+. "$PSScriptRoot/../conf-scurl.ps1"
+
+Assert-True (Test-InstalledVersion -Expected "8.23.0" -Actual "8.23.0") "exact version matches"
+Assert-True (Test-InstalledVersion -Expected "8.23.0-1" -Actual "8.23.0") "packaging suffix in tag matches base version"
+Assert-True (-not (Test-InstalledVersion -Expected "8.23.0-1" -Actual "8.22.0")) "different base version does not match"
+Assert-True (-not (Test-InstalledVersion -Expected "8.23.0" -Actual $null)) "null/failed binary does not match"
 
 # --- Test: download and install ---
 . "$PSScriptRoot/../conf-scurl.ps1"
@@ -84,7 +92,7 @@ $url = Get-DownloadUrl -Version $version -OS "windows" -Arch "x86_64"
 Invoke-ScurlDownload -Url $url -InstallPath $testDir -BinaryName "scurl" -Version $version
 
 Assert-True (Test-Path (Join-Path $testDir "scurl.exe")) "scurl.exe exists after download"
-Assert-Eq (Get-InstalledCurlVersion -InstallPath $testDir -BinaryName "scurl") $version "installed binary reports requested version"
+Assert-True (Test-InstalledVersion -Expected $version -Actual (Get-InstalledCurlVersion -InstallPath $testDir -BinaryName "scurl")) "installed binary matches requested version (ignoring packaging suffix)"
 
 Remove-Item -Recurse -Force $testDir
 

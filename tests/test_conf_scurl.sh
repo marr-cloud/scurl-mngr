@@ -96,12 +96,20 @@ SCURL_SOURCED=1 . ./conf-scurl
 
 # Test fetch_latest_version (requires network)
 fetch_latest_version
-if echo "$REMOTE_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+if echo "$REMOTE_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9]+)?$'; then
   PASS=$((PASS + 1))
 else
   FAIL=$((FAIL + 1))
   echo "FAIL: fetch_latest_version returned '$REMOTE_VERSION', expected semver" >&2
 fi
+
+# --- Test: version match ignores packaging suffix ---
+SCURL_SOURCED=1 . ./conf-scurl
+
+if version_matches "8.23.0" "8.23.0"; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAIL: exact version should match" >&2; fi
+if version_matches "8.23.0-1" "8.23.0"; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAIL: packaging suffix should match base version" >&2; fi
+if version_matches "8.23.0-1" "8.22.0"; then FAIL=$((FAIL + 1)); echo "FAIL: different base version should not match" >&2; else PASS=$((PASS + 1)); fi
+if version_matches "8.23.0" ""; then FAIL=$((FAIL + 1)); echo "FAIL: empty/failed binary should not match" >&2; else PASS=$((PASS + 1)); fi
 
 # --- Test: download and install ---
 SCURL_SOURCED=1 . ./conf-scurl
@@ -126,8 +134,13 @@ else
   echo "FAIL: scurl not installed or not executable in $TEST_INSTALL_DIR" >&2
 fi
 
-# Verify the installed binary actually reports the requested version
-assert_eq "$(get_installed_version "$TEST_INSTALL_DIR/scurl")" "$VERSION" "installed binary reports requested version"
+# Verify the installed binary matches the requested version (ignoring packaging suffix)
+if version_matches "$VERSION" "$(get_installed_version "$TEST_INSTALL_DIR/scurl")"; then
+  PASS=$((PASS + 1))
+else
+  FAIL=$((FAIL + 1))
+  echo "FAIL: installed binary version does not match requested $VERSION (ignoring packaging suffix)" >&2
+fi
 
 # Cleanup
 rm -rf "$TEST_INSTALL_DIR"

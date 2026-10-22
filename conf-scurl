@@ -139,6 +139,14 @@ get_installed_version() {
   "$_bin_path" --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true
 }
 
+version_matches() {
+  # $1 = release tag (may carry a -N packaging revision), $2 = version the
+  # binary reports (MAJOR.MINOR.PATCH only). static-curl tags like 8.23.0-1
+  # repackage the same curl, which cannot report the revision, so compare the
+  # upstream version portion only.
+  [ -n "$2" ] && [ "$2" = "${1%%-*}" ]
+}
+
 download_and_install() {
   _tmpdir=$(mktemp -d)
   _archive="$_tmpdir/curl.tar.xz"
@@ -164,7 +172,7 @@ download_and_install() {
   rm -rf "$_tmpdir"
 
   _actual=$(get_installed_version "$INSTALL_PATH/$BINARY_NAME")
-  if [ "$_actual" != "$VERSION" ]; then
+  if ! version_matches "$VERSION" "$_actual"; then
     echo "Error: expected v$VERSION but installed binary reports v${_actual:-<none>} (or failed to run) - the update did not take effect. Close any running $BINARY_NAME processes and retry." >&2
     return 1
   fi
