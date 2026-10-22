@@ -5,7 +5,7 @@ Manage [static-curl](https://github.com/stunnel/static-curl) installations.
 ## Quick Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/marr-cloud/scurl-mngr/main/install.sh | sh
+curl -fsSL https://marr-cloud.github.io/scurl-mngr/install.sh | sh
 ```
 
 ## Requirements
@@ -42,7 +42,7 @@ Stored in `~/.config/scurl/config`:
 ### Quick Install (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/marr-cloud/scurl-mngr/main/install.ps1 | iex
+irm https://marr-cloud.github.io/scurl-mngr/install.ps1 | iex
 ```
 
 ### Requirements (Windows)

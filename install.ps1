@@ -2,7 +2,6 @@
 #Requires -Version 5.1
 $ErrorActionPreference = "Stop"
 
-$Repo = "marr-cloud/scurl-mngr"
 $InstallPath = Join-Path $env:LOCALAPPDATA "scurl\bin"
 
 Write-Host "scurl-mngr installer"
@@ -19,7 +18,7 @@ New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
 
 # Download conf-scurl.ps1
 Write-Host "Downloading conf-scurl.ps1..."
-$baseUrl = "https://raw.githubusercontent.com/$Repo/main"
+$baseUrl = "https://marr-cloud.github.io/scurl-mngr"
 Invoke-WebRequest -Uri "$baseUrl/conf-scurl.ps1" -OutFile (Join-Path $InstallPath "conf-scurl.ps1") -UseBasicParsing
 
 # Create conf-scurl.cmd wrapper

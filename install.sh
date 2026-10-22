@@ -1,7 +1,6 @@
 #!/bin/sh
 set -eu
 
-REPO="marr-cloud/scurl-mngr"
 DEFAULT_PATH="$HOME/.local/bin"
 
 echo "scurl-mngr installer"
@@ -33,7 +32,7 @@ mkdir -p "$INSTALL_PATH"
 
 # Download conf-scurl
 echo "Downloading conf-scurl..."
-CONF_URL="https://raw.githubusercontent.com/$REPO/main/conf-scurl"
+CONF_URL="https://marr-cloud.github.io/scurl-mngr/conf-scurl"
 if command -v curl >/dev/null 2>&1; then
   curl -fsSL "$CONF_URL" -o "$INSTALL_PATH/conf-scurl"
 else
